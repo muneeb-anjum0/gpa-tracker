@@ -9,6 +9,10 @@
     ],
     "rewrites": [
       {
+        "source": "/sitemap.xml/google5dac51dcc080c5ec.html",
+        "destination": "/google5dac51dcc080c5ec.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
