@@ -136,7 +136,13 @@ function clearSessionWindow() {
 
 function isSessionExpired() {
   const sessionStartedAt = Number(localStorage.getItem(SESSION_STARTED_AT_KEY))
-  return !Number.isFinite(sessionStartedAt) || Date.now() - sessionStartedAt > SESSION_MAX_AGE_MS
+
+  if (!Number.isFinite(sessionStartedAt) || sessionStartedAt <= 0) {
+    startSessionWindow()
+    return false
+  }
+
+  return Date.now() - sessionStartedAt > SESSION_MAX_AGE_MS
 }
 
 function AuthScreen({ authError, setAuthError }) {
@@ -157,13 +163,14 @@ function AuthScreen({ authError, setAuthError }) {
     setIsSubmitting(true)
     try {
       await setPersistence(auth, browserLocalPersistence)
+      startSessionWindow()
       if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password)
       } else {
         await createUserWithEmailAndPassword(auth, email, password)
       }
-      startSessionWindow()
     } catch (error) {
+      clearSessionWindow()
       setAuthError(error.message.replace('Firebase: ', ''))
     } finally {
       setIsSubmitting(false)
