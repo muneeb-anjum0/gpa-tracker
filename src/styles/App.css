@@ -463,6 +463,27 @@
   background: rgba(241, 222, 222, 0.42);
 }
 
+.grade-card,
+.credit-card,
+.balance-card {
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.grade-card:hover {
+  border-color: rgba(139, 92, 246, 0.34);
+  background: rgba(232, 224, 246, 0.42);
+}
+
+.credit-card:hover {
+  border-color: rgba(15, 118, 110, 0.34);
+  background: rgba(220, 238, 236, 0.42);
+}
+
+.balance-card:hover {
+  border-color: rgba(249, 115, 22, 0.34);
+  background: rgba(246, 230, 218, 0.42);
+}
+
 .chart-card h3 {
   margin: 0 0 10px;
   font-size: 0.98rem;

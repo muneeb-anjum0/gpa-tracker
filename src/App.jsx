@@ -9,10 +9,6 @@ import {
   Cell,
   Pie,
   PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -270,6 +266,9 @@ function App() {
   const [statusMessage, setStatusMessage] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isMomentumHovered, setIsMomentumHovered] = useState(false)
+  const [isGradeHovered, setIsGradeHovered] = useState(false)
+  const [isCreditHovered, setIsCreditHovered] = useState(false)
+  const [isBalanceHovered, setIsBalanceHovered] = useState(false)
   const fileInputRef = useRef(null)
   const userHandle = user?.email?.split('@')[0] || 'user'
 
@@ -353,6 +352,7 @@ function App() {
       SGPA: calculateSGPA(semester),
       credits: semester.courses.reduce((sum, course) => sum + getCredits(course), 0),
       courses: semester.courses.length,
+      qualityPoints: Number(semester.courses.reduce((sum, course) => sum + getCredits(course) * getPoints(course.grade), 0).toFixed(2)),
     }))
     let cumulativePoints = 0
     let cumulativeCredits = 0
@@ -373,22 +373,26 @@ function App() {
       grade,
       count: semesters.reduce((count, semester) => count + semester.courses.filter((course) => course.grade === grade).length, 0),
     })).filter((item) => item.count > 0)
-    const quality = semesterData.map((item) => ({
-      subject: item.shortName,
-      SGPA: item.SGPA,
-      fullMark: 4,
-    }))
+    const gradeCreditData = Object.keys(GRADE_SCHEME).map((grade) => ({
+      grade,
+      credits: Number(semesters.reduce((total, semester) => (
+        total + semester.courses
+          .filter((course) => course.grade === grade)
+          .reduce((sum, course) => sum + getCredits(course), 0)
+      ), 0).toFixed(2)),
+    })).filter((item) => item.credits > 0)
     const best = semesterData.reduce((current, item) => (item.SGPA > current.SGPA ? item : current), { name: 'None', SGPA: 0 })
     const attention = semesterData.reduce((current, item) => (item.SGPA < current.SGPA ? item : current), semesterData[0] || { name: 'None', SGPA: 0 })
     const trend = semesterData.length > 1 ? Number((semesterData.at(-1).SGPA - semesterData.at(-2).SGPA).toFixed(2)) : 0
     const weightedCourses = semesters.flatMap((semester) => semester.courses.map((course) => ({
       name: course.name || 'Untitled course',
+      shortName: (course.name || 'Course').replace(/^Lab:\s*/i, '').slice(0, 14),
       impact: Number((getCredits(course) * (4 - getPoints(course.grade))).toFixed(2)),
       grade: course.grade,
       credits: getCredits(course),
     }))).sort((a, b) => b.impact - a.impact).slice(0, 6)
 
-    return { cgpa, totalCredits, totalCourses, semesterData, cgpaData, distribution, quality, best, attention, trend, weightedCourses }
+    return { cgpa, totalCredits, totalCourses, semesterData, cgpaData, distribution, gradeCreditData, best, attention, trend, weightedCourses }
   }, [semesters])
 
   const displaySemesters = useMemo(
@@ -640,39 +644,72 @@ function App() {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Grade mix">
+            <ChartCard
+              title={isGradeHovered ? 'Credits by grade' : 'Grade mix'}
+              className="grade-card"
+              onMouseEnter={() => setIsGradeHovered(true)}
+              onMouseLeave={() => setIsGradeHovered(false)}
+            >
               <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={stats.distribution} dataKey="count" nameKey="grade" innerRadius={58} outerRadius={90} paddingAngle={4}>
-                    {stats.distribution.map((entry, index) => (
-                      <Cell key={entry.grade} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<TrackerTooltip />} />
-                </PieChart>
+                {isGradeHovered ? (
+                  <BarChart data={stats.gradeCreditData}>
+                    <CartesianGrid strokeDasharray="5 5" stroke="#dbe3ef" />
+                    <XAxis dataKey="grade" tickLine={false} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <Tooltip content={<TrackerTooltip />} />
+                    <Bar dataKey="credits" fill="#8b5cf6" radius={[10, 10, 2, 2]} animationDuration={260} />
+                  </BarChart>
+                ) : (
+                  <PieChart>
+                    <Pie data={stats.distribution} dataKey="count" nameKey="grade" innerRadius={58} outerRadius={90} paddingAngle={4}>
+                      {stats.distribution.map((entry, index) => (
+                        <Cell key={entry.grade} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<TrackerTooltip />} />
+                  </PieChart>
+                )}
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Credit load">
+            <ChartCard
+              title={isCreditHovered ? 'Quality points earned' : 'Credit load'}
+              className="credit-card"
+              onMouseEnter={() => setIsCreditHovered(true)}
+              onMouseLeave={() => setIsCreditHovered(false)}
+            >
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={stats.semesterData}>
                   <CartesianGrid strokeDasharray="5 5" stroke="#dbe3ef" />
                   <XAxis dataKey="shortName" tickLine={false} axisLine={false} />
                   <YAxis tickLine={false} axisLine={false} />
                   <Tooltip content={<TrackerTooltip />} />
-                  <Bar dataKey="credits" fill="#16a34a" radius={[10, 10, 2, 2]} />
+                  <Bar dataKey={isCreditHovered ? 'qualityPoints' : 'credits'} fill={isCreditHovered ? '#0f766e' : '#16a34a'} radius={[10, 10, 2, 2]} animationDuration={260} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Semester balance">
+            <ChartCard
+              title={isBalanceHovered ? 'GPA lift map' : 'Semester balance'}
+              className="balance-card"
+              onMouseEnter={() => setIsBalanceHovered(true)}
+              onMouseLeave={() => setIsBalanceHovered(false)}
+            >
               <ResponsiveContainer width="100%" height={260}>
-                <RadarChart data={stats.quality}>
-                  <PolarGrid stroke="#dbe3ef" />
-                  <PolarAngleAxis dataKey="subject" />
-                  <Radar dataKey="SGPA" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.22} />
+                <BarChart data={isBalanceHovered ? stats.weightedCourses : stats.semesterData}>
+                  <CartesianGrid strokeDasharray="5 5" stroke="#dbe3ef" />
+                  <XAxis dataKey={isBalanceHovered ? 'shortName' : 'shortName'} tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
                   <Tooltip content={<TrackerTooltip />} />
-                </RadarChart>
+                  {isBalanceHovered ? (
+                    <Bar dataKey="impact" fill="#f97316" radius={[10, 10, 2, 2]} animationDuration={260} />
+                  ) : (
+                    <>
+                      <Bar dataKey="credits" fill="#64748b" radius={[10, 10, 2, 2]} animationDuration={260} />
+                      <Bar dataKey="courses" fill="#f59e0b" radius={[10, 10, 2, 2]} animationDuration={260} />
+                    </>
+                  )}
+                </BarChart>
               </ResponsiveContainer>
             </ChartCard>
           </section>
