@@ -1,31 +1,13 @@
 # GPA Tracker
 
-Minimal Firebase GPA tracker with email/password auth, per-user Firestore storage, semester analytics, and manual save control.
+## Description
 
-## Live
+GPA Tracker is a minimal academic dashboard for calculating GPA, tracking semesters, reviewing grade distribution, and saving progress securely per user.
 
-https://thegpa-tracker.web.app
+## Mission
 
-## Stack
+Help students understand their academic progress clearly, quickly, and without clutter.
 
-React, Vite, Firebase Auth, Firestore, Firebase Hosting, Recharts.
+## Vision
 
-## Setup
-
-```bash
-npm install
-cp .env.example .env
-npm run dev
-```
-
-## Deploy
-
-```bash
-npm run firebase:deploy
-```
-
-Firestore stores grades at:
-
-```text
-users/{uid}/files/CURRENT-GRADES.json
-```
+Become a simple, trusted GPA planning tool for students who want better visibility into grades, credits, and long-term academic momentum.
